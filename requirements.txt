@@ -90,6 +90,6 @@ werkzeug==1.0.1           # via flask, flask-jwt-extended
 wtforms-json==0.3.3       # via apache-superset (setup.py)
 wtforms==2.3.1            # via flask-wtf, wtforms-json
 zipp==3.1.0               # via importlib-metadata
-
+cx_Oracle
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

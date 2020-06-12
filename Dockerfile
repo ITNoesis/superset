@@ -24,9 +24,9 @@ FROM python:${PY_VER} AS superset-py
 RUN mkdir /app \
         && apt-get update -y \
         && apt-get install -y --no-install-recommends \
-            build-essential \
-            default-libmysqlclient-dev \
-            libpq-dev \
+        build-essential \
+        default-libmysqlclient-dev \
+        libpq-dev \
         && rm -rf /var/lib/apt/lists/*
 
 # First, we just wanna install requirements, which will allow us to utilize the cache
@@ -68,20 +68,20 @@ ARG PY_VER=3.6.9
 FROM python:${PY_VER} AS lean
 
 ENV LANG=C.UTF-8 \
-    LC_ALL=C.UTF-8 \
-    FLASK_ENV=production \
-    FLASK_APP="superset.app:create_app()" \
-    PYTHONPATH="/app/pythonpath" \
-    SUPERSET_HOME="/app/superset_home" \
-    SUPERSET_PORT=8080
+        LC_ALL=C.UTF-8 \
+        FLASK_ENV=production \
+        FLASK_APP="superset.app:create_app()" \
+        PYTHONPATH="/app/pythonpath" \
+        SUPERSET_HOME="/app/superset_home" \
+        SUPERSET_PORT=8080
 
 RUN useradd --user-group --no-create-home --no-log-init --shell /bin/bash superset \
         && mkdir -p ${SUPERSET_HOME} ${PYTHONPATH} \
         && apt-get update -y \
         && apt-get install -y --no-install-recommends \
-            build-essential \
-            default-libmysqlclient-dev \
-            libpq-dev \
+        build-essential \
+        default-libmysqlclient-dev \
+        libpq-dev \
         && rm -rf /var/lib/apt/lists/*
 
 COPY --from=superset-py /usr/local/lib/python3.6/site-packages/ /usr/local/lib/python3.6/site-packages/
@@ -89,6 +89,23 @@ COPY --from=superset-py /usr/local/lib/python3.6/site-packages/ /usr/local/lib/p
 COPY --from=superset-py /usr/local/bin/gunicorn /usr/local/bin/celery /usr/local/bin/flask /usr/bin/
 COPY --from=superset-node /app/superset/static/assets /app/superset/static/assets
 COPY --from=superset-node /app/superset-frontend /app/superset-frontend
+
+# install oracle client
+RUN mkdir -p /usr/share/oracle/network/admin \
+        && cd /usr/share/oracle \
+        && apt-get update -y \
+        && apt-get install -y --no-install-recommends libaio1 libaio-dev \
+        && rm -rf /var/lib/apt/lists/* \
+        && wget https://download.oracle.com/otn_software/linux/instantclient/instantclient-basiclite-linuxx64.zip \
+        && unzip instantclient-basiclite-linuxx64.zip \
+        && rm -f instantclient-basiclite-linuxx64.zip \
+        && cd  /usr/share/oracle/instantclient* \
+        && rm -f *jdbc* *occi* *mysql* *README *jar uidrvci genezi adrci \
+        && echo  /usr/share/oracle/instantclient* > /etc/ld.so.conf.d/oracle-instantclient.conf \
+        && ldconfig
+ENV TNS_ADMIN="/usr/share/oracle/network/admin"
+VOLUME /usr/share/oracle/network/admin
+
 
 ## Lastly, let's install superset itself
 COPY superset /app/superset
@@ -119,9 +136,9 @@ COPY ./requirements* ./docker/requirements* /app/
 USER root
 # Cache everything for dev purposes...
 RUN cd /app \
-    && pip install --ignore-installed -e . \
-    && pip install --ignore-installed -r requirements.txt \
-    && pip install --ignore-installed -r requirements-dev.txt \
-    && pip install --ignore-installed -r requirements-extra.txt \
-    && pip install --ignore-installed -r requirements-local.txt || true
+        && pip install --ignore-installed -e . \
+        && pip install --ignore-installed -r requirements.txt \
+        && pip install --ignore-installed -r requirements-dev.txt \
+        && pip install --ignore-installed -r requirements-extra.txt \
+        && pip install --ignore-installed -r requirements-local.txt || true
 USER superset
